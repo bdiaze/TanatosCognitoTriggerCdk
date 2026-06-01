@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Amazon.Lambda.Core;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -33,7 +35,13 @@ namespace TanatosCognitoTrigger.Repositories {
 		}
 
 		public async Task ActivarSuscripcionGratuita(string sub) {
+			Stopwatch stopwatch = Stopwatch.StartNew();
+
 			ApiConfig config = await _config.Value;
+
+			LambdaLogger.Log(
+				$"[SuscripcionDao] - [ActivarSuscripcionGratuita] - [{stopwatch.ElapsedMilliseconds} ms] - " +
+				$"Se ejecuta await ApiConfig.");
 
 			using HttpClient client = new(new RetryHandler(new HttpClientHandler()));
 			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await clientCredentialsHelper.ObtenerAccessToken(
@@ -55,6 +63,10 @@ namespace TanatosCognitoTrigger.Repositories {
 					statusCode: response.StatusCode
 				);
 			}
+
+			LambdaLogger.Log(
+				$"[SuscripcionDao] - [ActivarSuscripcionGratuita] - [{stopwatch.ElapsedMilliseconds} ms] - " +
+				$"Se ejecuta PostAsync(...)");
 		}
 	}
 

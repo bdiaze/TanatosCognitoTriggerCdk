@@ -17,6 +17,8 @@ public class Function {
 	private readonly IServiceProvider serviceProvider;
 
 	public Function() {
+		Stopwatch stopwatch = Stopwatch.StartNew();
+
 		IHostBuilder builder = Host.CreateDefaultBuilder();
 		builder.ConfigureServices((context, services) => {
 			#region Singleton AWS Services
@@ -36,7 +38,15 @@ public class Function {
 			#endregion
 		});
 
+		LambdaLogger.Log(
+			$"[Function] - [Constructor] - [{stopwatch.ElapsedMilliseconds} ms] - " +
+			$"Se añaden los singleton.");
+
 		IHost app = builder.Build();
+
+		LambdaLogger.Log(
+			$"[Function] - [Constructor] - [{stopwatch.ElapsedMilliseconds} ms] - " +
+			$"Se ejecuta el builder.Build().");
 
 		serviceProvider = app.Services;
 	}
