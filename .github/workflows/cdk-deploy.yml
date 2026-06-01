@@ -1,0 +1,70 @@
+name: CDK Deploy on AWS
+
+on:
+    push:
+        branches:
+            - main
+      
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        environment: Production
+        permissions:
+            contents: read
+            id-token: write
+        env:
+            APP_NAME: ${{ vars.APP_NAME }}
+            ACCOUNT_AWS: ${{ vars.ACCOUNT_AWS }}
+            REGION_AWS: ${{ vars.REGION_AWS }}
+                        
+            COGNITO_TRIGGER_LAMBDA_DIRECTORY: ${{ vars.COGNITO_TRIGGER_LAMBDA_DIRECTORY }}
+            COGNITO_TRIGGER_LAMBDA_HANDLER: ${{ vars.COGNITO_TRIGGER_LAMBDA_HANDLER }}
+            COGNITO_TRIGGER_LAMBDA_MEMORY_SIZE: ${{ vars.COGNITO_TRIGGER_LAMBDA_MEMORY_SIZE }}
+            COGNITO_TRIGGER_LAMBDA_TIMEOUT: ${{ vars.COGNITO_TRIGGER_LAMBDA_TIMEOUT }}
+            
+            ARN_PARAMETER_TANATOS_API_URL: ${{ vars.ARN_PARAMETER_TANATOS_API_URL }}
+            ARN_SECRET_TANATOS_API: ${{ vars.ARN_SECRET_TANATOS_API }}
+                                    
+        steps:
+            - name: Checkout Repositorio
+              uses: actions/checkout@v4
+      
+            - name: Instalar .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: ${{ vars.VERSION_DOTNET }}
+      
+            - name: Instalar Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ vars.VERSION_NODEJS }}
+                                                      
+            - name: Instalar AWS CDK
+              run: npm install --ignore-scripts -g aws-cdk@2.1125.0
+              
+            - name: Publish .NET Lambda
+              working-directory: ${{ vars.COGNITO_TRIGGER_LAMBDA_DIRECTORY }}
+              run: dotnet publish /p:PublishDir=../publish /p:PublishReadyToRun=true -r linux-x64 --no-self-contained
+              
+            - name: Compress Publish Directory .NET Lambda
+              working-directory: ${{ vars.COGNITO_TRIGGER_LAMBDA_DIRECTORY }}/publish
+              run: zip -r -T ./publish.zip ./*
+                    
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4
+              with:
+                  aws-region: ${{ vars.REGION_AWS }}
+                  role-to-assume: ${{ vars.ARN_GITHUB_ROLE }}
+                  
+            - name: CDK Synth
+              working-directory: ${{ vars.DIRECTORIO_CDK }}
+              run: cdk synth
+              
+            - name: CDK Diff
+              working-directory: ${{ vars.DIRECTORIO_CDK }}
+              run: cdk --app cdk.out diff
+              
+            - name: CDK Deploy
+              working-directory: ${{ vars.DIRECTORIO_CDK }}
+              run: cdk --app cdk.out deploy --require-approval never --no-previous-parameters
+          
