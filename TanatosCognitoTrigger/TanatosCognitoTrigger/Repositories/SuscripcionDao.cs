@@ -19,13 +19,8 @@ namespace TanatosCognitoTrigger.Repositories {
 		private readonly Lazy<Task<ApiConfig>> _config = new(() => InicializarApiConfig(variableEntorno, parameterStore, secretManagerHelper));
 
 		private static async Task<ApiConfig> InicializarApiConfig(VariableEntornoHelper variableEntorno, ParameterStoreHelper parameterStore, SecretManagerHelper secretManagerHelper) {
-			Stopwatch stopwatch = Stopwatch.StartNew();
-
 			Task<string> taskParametro = parameterStore.ObtenerParametro(variableEntorno.Obtener("ARN_PARAMETER_TANATOS_API_URL"));
 			Task<string> taskSecreto = secretManagerHelper.ObtenerSecreto(variableEntorno.Obtener("ARN_SECRET_TANATOS_API"));
-
-			taskParametro.ContinueWith(t => LambdaLogger.Log($"[SuscripcionDao] - [InicializarApiConfig] - [{stopwatch.ElapsedMilliseconds} ms] - TaskParametro"));
-			taskSecreto.ContinueWith(t => LambdaLogger.Log($"[SuscripcionDao] - [InicializarApiConfig] - [{stopwatch.ElapsedMilliseconds} ms] - TaskSecreto"));
 
 			await Task.WhenAll(taskParametro, taskSecreto);
 			string baseUrl = taskParametro.Result;
@@ -40,13 +35,7 @@ namespace TanatosCognitoTrigger.Repositories {
 		}
 
 		public async Task ActivarSuscripcionGratuita(string sub) {
-			Stopwatch stopwatch = Stopwatch.StartNew();
-
 			ApiConfig config = await _config.Value;
-
-			LambdaLogger.Log(
-				$"[SuscripcionDao] - [ActivarSuscripcionGratuita] - [{stopwatch.ElapsedMilliseconds} ms] - " +
-				$"Se ejecuta await ApiConfig.");
 
 			using HttpClient client = new(new RetryHandler(new HttpClientHandler()));
 			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await clientCredentialsHelper.ObtenerAccessToken(
@@ -55,10 +44,6 @@ namespace TanatosCognitoTrigger.Repositories {
 				config.CognitoTriggerClientSecret, 
 				_cognitoTriggerScopes
 			));
-
-			LambdaLogger.Log(
-				$"[SuscripcionDao] - [ActivarSuscripcionGratuita] - [{stopwatch.ElapsedMilliseconds} ms] - " +
-				$"Se ejecuta ObtenerAccessToken(...)");
 
 			EntSuscripcionActivarSuscripcionGratuita entrada = new() { 
 				Sub = sub
@@ -72,10 +57,6 @@ namespace TanatosCognitoTrigger.Repositories {
 					statusCode: response.StatusCode
 				);
 			}
-
-			LambdaLogger.Log(
-				$"[SuscripcionDao] - [ActivarSuscripcionGratuita] - [{stopwatch.ElapsedMilliseconds} ms] - " +
-				$"Se ejecuta PostAsync(...)");
 		}
 	}
 
