@@ -56,6 +56,10 @@ namespace TanatosCognitoTrigger.Repositories {
 				_cognitoTriggerScopes
 			));
 
+			LambdaLogger.Log(
+				$"[SuscripcionDao] - [ActivarSuscripcionGratuita] - [{stopwatch.ElapsedMilliseconds} ms] - " +
+				$"Se ejecuta ObtenerAccessToken(...)");
+
 			EntSuscripcionActivarSuscripcionGratuita entrada = new() { 
 				Sub = sub
 			};
