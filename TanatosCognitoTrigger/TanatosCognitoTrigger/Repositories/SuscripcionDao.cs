@@ -19,8 +19,13 @@ namespace TanatosCognitoTrigger.Repositories {
 		private readonly Lazy<Task<ApiConfig>> _config = new(() => InicializarApiConfig(variableEntorno, parameterStore, secretManagerHelper));
 
 		private static async Task<ApiConfig> InicializarApiConfig(VariableEntornoHelper variableEntorno, ParameterStoreHelper parameterStore, SecretManagerHelper secretManagerHelper) {
+			Stopwatch stopwatch = Stopwatch.StartNew();
+
 			Task<string> taskParametro = parameterStore.ObtenerParametro(variableEntorno.Obtener("ARN_PARAMETER_TANATOS_API_URL"));
 			Task<string> taskSecreto = secretManagerHelper.ObtenerSecreto(variableEntorno.Obtener("ARN_SECRET_TANATOS_API"));
+
+			taskParametro.ContinueWith(t => LambdaLogger.Log($"[SuscripcionDao] - [InicializarApiConfig] - [{stopwatch.ElapsedMilliseconds} ms] - TaskParametro"));
+			taskSecreto.ContinueWith(t => LambdaLogger.Log($"[SuscripcionDao] - [InicializarApiConfig] - [{stopwatch.ElapsedMilliseconds} ms] - TaskSecreto"));
 
 			await Task.WhenAll(taskParametro, taskSecreto);
 			string baseUrl = taskParametro.Result;
