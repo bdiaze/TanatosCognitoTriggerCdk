@@ -31,7 +31,7 @@ namespace TanatosCognitoTrigger.Repositories {
 			};
 		}
 
-		public async Task EnviarCodigoVerificacion(string? nombre, string correoElectronico, string codigoEncriptado) {
+		public async Task EnviarCodigoVerificacion(string? nombre, string correoElectronico, string codigoEncriptado, TipoCodigoVerificacion tipoCodigoVerificacion) {
 			ApiConfig config = await _config.Value;
 
 			using HttpClient client = new(new RetryHandler(new HttpClientHandler()));
@@ -45,7 +45,8 @@ namespace TanatosCognitoTrigger.Repositories {
 			EntProfileEnviarCodigoVerificacion entrada = new() {
 				Nombre = nombre,
 				CorreoElectronico = correoElectronico,
-				CodigoEncriptado = codigoEncriptado
+				CodigoEncriptado = codigoEncriptado,
+				TipoCodigo = tipoCodigoVerificacion
 			};
 
 			HttpResponseMessage response = await client.PostAsync(config.BaseUrl + "/Perfil/EnviarCodigoVerificacion", new StringContent(JsonSerializer.Serialize(entrada), Encoding.UTF8, "application/json"));

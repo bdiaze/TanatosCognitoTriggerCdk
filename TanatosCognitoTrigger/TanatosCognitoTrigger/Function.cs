@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
 using System.Text.Json;
+using TanatosCognitoTrigger.Entities;
 using TanatosCognitoTrigger.Helpers;
 using TanatosCognitoTrigger.Repositories;
 
@@ -16,6 +17,16 @@ namespace TanatosCognitoTrigger;
 
 public class Function {
 	private readonly IServiceProvider serviceProvider;
+	private readonly string[] CUSTOM_EMAIL_EVENTS = [
+		"CustomEmailSender_SignUp",
+		"CustomEmailSender_ForgotPassword",
+		"CustomEmailSender_ResendCode",
+		"CustomEmailSender_UpdateUserAttribute",
+		"CustomEmailSender_VerifyUserAttribute",
+		"CustomEmailSender_Authentication",
+		"CustomEmailSender_AdminCreateUser",
+		"CustomEmailSender_AccountTakeOverNotification"
+	];
 
 	public Function() {
 		IHostBuilder builder = Host.CreateDefaultBuilder();
@@ -55,7 +66,7 @@ public class Function {
 
 			SuscripcionDao suscripcionDao = serviceProvider.GetRequiredService<SuscripcionDao>();
 			await suscripcionDao.ActivarSuscripcionGratuita(cognitoEvento.UserName);
-		} else if (triggerSource == "CustomEmailSender_SignUp") {
+		} else if (CUSTOM_EMAIL_EVENTS.Contains(triggerSource)) {
 			CognitoCustomEmailSenderEvent cognitoEvento = JsonSerializer.Deserialize<CognitoCustomEmailSenderEvent>(jsonCognitoEvento.GetRawText()) ?? throw new InvalidOperationException("CognitoCustomEmailSenderEvent no definido");
 
 			string? nombre = cognitoEvento.Request.UserAttributes.TryGetValue("given_name", out string? value) ? value : null;
@@ -63,7 +74,17 @@ public class Function {
 			string codigoEncriptado = cognitoEvento.Request.Code;
 
 			PerfilDao profileDao = serviceProvider.GetRequiredService<PerfilDao>();
-			await profileDao.EnviarCodigoVerificacion(nombre, correoElectronico, codigoEncriptado);
+			await profileDao.EnviarCodigoVerificacion(nombre, correoElectronico, codigoEncriptado, triggerSource switch {
+				"CustomEmailSender_SignUp" => TipoCodigoVerificacion.SignUp,
+				"CustomEmailSender_ForgotPassword" => TipoCodigoVerificacion.ForgotPassword,
+				"CustomEmailSender_ResendCode" => TipoCodigoVerificacion.ResendCode,
+				"CustomEmailSender_UpdateUserAttribute" => TipoCodigoVerificacion.UpdateUserAttribute,
+				"CustomEmailSender_VerifyUserAttribute" => TipoCodigoVerificacion.VerifyUserAttribute,
+				"CustomEmailSender_Authentication" => TipoCodigoVerificacion.Authentication,
+				"CustomEmailSender_AdminCreateUser" => TipoCodigoVerificacion.AdminCreateUser,
+				"CustomEmailSender_AccountTakeOverNotification" => TipoCodigoVerificacion.AccountTakeOverNotification,
+				_ => throw new InvalidOperationException("TriggerSource inválido")
+			});
 		}
 
 		LambdaLogger.Log(
