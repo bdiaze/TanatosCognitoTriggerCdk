@@ -7,10 +7,10 @@ using TanatosCognitoTrigger.Entities;
 using TanatosCognitoTrigger.Helpers;
 
 namespace TanatosCognitoTrigger.Repositories {
-	internal class ProfileDao(VariableEntornoHelper variableEntorno, ParameterStoreHelper parameterStore, SecretManagerHelper secretManagerHelper, ClientCredentialsHelper clientCredentialsHelper) {
+	internal class PerfilDao(VariableEntornoHelper variableEntorno, ParameterStoreHelper parameterStore, SecretManagerHelper secretManagerHelper, ClientCredentialsHelper clientCredentialsHelper) {
 		private readonly string[] _cognitoTriggerScopes = [
-			"api/profile.read.all",
-			"api/profile.write.all"
+			"api/perfil.read.all",
+			"api/perfil.write.all"
 		];
 
 		private readonly Lazy<Task<ApiConfig>> _config = new(() => InicializarApiConfig(variableEntorno, parameterStore, secretManagerHelper));
@@ -48,7 +48,7 @@ namespace TanatosCognitoTrigger.Repositories {
 				CodigoEncriptado = codigoEncriptado
 			};
 
-			HttpResponseMessage response = await client.PostAsync(config.BaseUrl + "/Profile/EnviarCodigoVerificacion", new StringContent(JsonSerializer.Serialize(entrada), Encoding.UTF8, "application/json"));
+			HttpResponseMessage response = await client.PostAsync(config.BaseUrl + "/Perfil/EnviarCodigoVerificacion", new StringContent(JsonSerializer.Serialize(entrada), Encoding.UTF8, "application/json"));
 			if (!response.IsSuccessStatusCode) {
 				throw new HttpRequestException(
 					$"Ocurrió un error al enviar código de verificación. StatusCode: {response.StatusCode} - Content: {await response.Content.ReadAsStringAsync()}",
