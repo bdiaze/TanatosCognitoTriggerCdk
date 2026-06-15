@@ -34,6 +34,7 @@ public class Function {
 
 			#region Singleton Repositories
 			services.AddSingleton<SuscripcionDao>();
+			services.AddSingleton<ProfileDao>();
 			#endregion
 		});
 		IHost app = builder.Build();
@@ -54,6 +55,15 @@ public class Function {
 
 			SuscripcionDao suscripcionDao = serviceProvider.GetRequiredService<SuscripcionDao>();
 			await suscripcionDao.ActivarSuscripcionGratuita(cognitoEvento.UserName);
+		} else if (triggerSource == "CustomEmailSender_SignUp") {
+			CognitoCustomEmailSenderEvent cognitoEvento = JsonSerializer.Deserialize<CognitoCustomEmailSenderEvent>(jsonCognitoEvento.GetRawText()) ?? throw new InvalidOperationException("CognitoCustomEmailSenderEvent no definido");
+
+			string? nombre = cognitoEvento.Request.UserAttributes.TryGetValue("name", out string? value) ? value : null;
+			string correoElectronico = cognitoEvento.Request.UserAttributes["email"];
+			string codigoEncriptado = cognitoEvento.Request.Code;
+
+			ProfileDao profileDao = serviceProvider.GetRequiredService<ProfileDao>();
+			await profileDao.EnviarCodigoVerificacion(nombre, correoElectronico, codigoEncriptado);
 		}
 
 		LambdaLogger.Log(
