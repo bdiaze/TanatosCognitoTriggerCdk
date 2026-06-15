@@ -5,6 +5,7 @@ using Amazon.SimpleSystemsManagement;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
+using System.Text.Json;
 using TanatosCognitoTrigger.Helpers;
 using TanatosCognitoTrigger.Repositories;
 
@@ -39,25 +40,26 @@ public class Function {
 		serviceProvider = app.Services;
 	}
 
-	public async Task<CognitoPostConfirmationEvent> FunctionHandler(CognitoPostConfirmationEvent cognitoEvent, ILambdaContext context) {
+	public async Task<JsonElement> FunctionHandler(JsonElement jsonCognitoEvento, ILambdaContext context) {
 		Stopwatch stopwatch = Stopwatch.StartNew();
 
-		string userName = cognitoEvent.UserName;
-		string triggerSource = cognitoEvent.TriggerSource;
-
+		string triggerSource = jsonCognitoEvento.GetProperty("triggerSource").GetString() ?? throw new InvalidOperationException("Trigger Source no definido");
+		
 		LambdaLogger.Log(
 			$"[Function] - [FunctionHandler] - " +
-			$"Se inicia trigger de Cognito con parámetros - TriggerSource: {triggerSource} - Sub {userName}");
+			$"Se inicia trigger de Cognito con parámetros - TriggerSource: {triggerSource}");
 
 		if (triggerSource == "PostConfirmation_ConfirmSignUp") {
+			CognitoPostConfirmationEvent cognitoEvento = JsonSerializer.Deserialize<CognitoPostConfirmationEvent>(jsonCognitoEvento.GetRawText()) ?? throw new InvalidOperationException("CognitoPostConfirmationEvent no definido");
+
 			SuscripcionDao suscripcionDao = serviceProvider.GetRequiredService<SuscripcionDao>();
-			await suscripcionDao.ActivarSuscripcionGratuita(userName);
+			await suscripcionDao.ActivarSuscripcionGratuita(cognitoEvento.UserName);
 		}
 
 		LambdaLogger.Log(
 			$"[Function] - [FunctionHandler] - [{stopwatch.ElapsedMilliseconds} ms] - " +
 			$"Se terminan de ejecutar el trigger de Cognito.");
 
-		return cognitoEvent;
+		return jsonCognitoEvento;
 	}
 }
