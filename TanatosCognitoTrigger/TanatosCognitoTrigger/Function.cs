@@ -69,7 +69,7 @@ public class Function {
 		} else if (CUSTOM_EMAIL_EVENTS.Contains(triggerSource)) {
 			CognitoCustomEmailSenderEvent cognitoEvento = JsonSerializer.Deserialize<CognitoCustomEmailSenderEvent>(jsonCognitoEvento.GetRawText()) ?? throw new InvalidOperationException("CognitoCustomEmailSenderEvent no definido");
 
-			string? nombre = cognitoEvento.Request.UserAttributes.TryGetValue("given_name", out string? value) ? value : null;
+			string? nombre = cognitoEvento.Request.UserAttributes.TryGetValue("given_name", out string? given_name) ? (given_name != null && !given_name.StartsWith("cognito:") ? given_name : null) : null;
 			string correoElectronico = cognitoEvento.Request.UserAttributes["email"];
 			string codigoEncriptado = cognitoEvento.Request.Code;
 
