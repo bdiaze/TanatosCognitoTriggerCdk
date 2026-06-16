@@ -76,17 +76,17 @@ public class Function {
 			PerfilDao profileDao = serviceProvider.GetRequiredService<PerfilDao>();
 			await profileDao.EnviarCodigoVerificacion(nombre, correoElectronico, codigoEncriptado, triggerSource switch {
 				"CustomEmailSender_SignUp" => TipoCodigoVerificacion.SignUp,
-				"CustomEmailSender_ForgotPassword" => throw new InvalidOperationException("TriggerSource inválido"), // TipoCodigoVerificacion.ForgotPassword,
+				"CustomEmailSender_ForgotPassword" => TipoCodigoVerificacion.ForgotPassword,
 				"CustomEmailSender_ResendCode" => TipoCodigoVerificacion.ResendCode,
 				"CustomEmailSender_UpdateUserAttribute" => TipoCodigoVerificacion.UpdateUserAttribute,
 				"CustomEmailSender_VerifyUserAttribute" => TipoCodigoVerificacion.VerifyUserAttribute,
 				"CustomEmailSender_Authentication" => TipoCodigoVerificacion.Authentication,
 				"CustomEmailSender_AdminCreateUser" => TipoCodigoVerificacion.AdminCreateUser,
 				"CustomEmailSender_AccountTakeOverNotification" => TipoCodigoVerificacion.AccountTakeOverNotification,
-				_ => throw new InvalidOperationException("TriggerSource inválido")
+				_ => throw new InvalidOperationException($"TriggerSource inválido: {triggerSource}")
 			});
 		} else {
-			throw new InvalidOperationException("TriggerSource inválido");
+			throw new InvalidOperationException($"TriggerSource inválido: {triggerSource}");
 		}
 
 		LambdaLogger.Log(
