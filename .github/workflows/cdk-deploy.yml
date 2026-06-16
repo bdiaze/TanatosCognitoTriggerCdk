@@ -24,6 +24,8 @@ jobs:
             
             ARN_PARAMETER_TANATOS_API_URL: ${{ vars.ARN_PARAMETER_TANATOS_API_URL }}
             ARN_SECRET_TANATOS_API: ${{ vars.ARN_SECRET_TANATOS_API }}
+            
+            NOTIFICATION_EMAILS: ${{ vars.NOTIFICATION_EMAILS }}
                                     
         steps:
             - name: Checkout Repositorio

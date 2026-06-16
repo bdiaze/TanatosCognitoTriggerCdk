@@ -1,7 +1,11 @@
 using Amazon.CDK;
+using Amazon.CDK.AWS.CloudWatch;
+using Amazon.CDK.AWS.CloudWatch.Actions;
 using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.Lambda;
 using Amazon.CDK.AWS.Logs;
+using Amazon.CDK.AWS.SNS;
+using Amazon.CDK.AWS.SNS.Subscriptions;
 using Amazon.CDK.AWS.SSM;
 using Constructs;
 using System;
@@ -21,7 +25,8 @@ namespace TanatosCognitoTriggerCdk
 			string arnParameterTanatosApiUrl = System.Environment.GetEnvironmentVariable("ARN_PARAMETER_TANATOS_API_URL") ?? throw new InvalidOperationException("No se ha configurado la variable de entorno ARN_PARAMETER_TANATOS_API_URL");
 			string arnSecretTanatosApi = System.Environment.GetEnvironmentVariable("ARN_SECRET_TANATOS_API") ?? throw new InvalidOperationException("No se ha configurado la variable de entorno ARN_SECRET_TANATOS_API");
 
-
+			string notificationEmails = System.Environment.GetEnvironmentVariable("NOTIFICATION_EMAILS") ?? throw new InvalidOperationException("No se ha configurado la variable de entorno NOTIFICATION_EMAILS");
+						
 			#region Log Group y Role
 			// Creación de log group lambda...
 			LogGroup lambdaLogGroup = new(this, $"{appName}CognitoTriggerLogGroup", new LogGroupProps {
@@ -98,6 +103,29 @@ namespace TanatosCognitoTriggerCdk
 				StringValue = function.FunctionArn,
 				Tier = ParameterTier.STANDARD,
 			});
+			#endregion
+
+			#region Alarm
+			// Se crea SNS topic para notificaciones...
+			Topic topic = new(this, $"{appName}CognitoTriggerNotificationSNSTopic", new TopicProps {
+				TopicName = $"{appName}CognitoTriggerNotificationSNSTopic",
+			});
+
+			foreach (string email in notificationEmails.Split(",")) {
+				topic.AddSubscription(new EmailSubscription(email));
+			}
+
+			// Se crea alarma para enviar notificación cuando llegue un elemento al DLQ...
+			Alarm alarmEmail = new(this, $"{appName}CognitoTriggerQueueAlarm", new AlarmProps {
+				AlarmName = $"{appName}CognitoTriggerQueueAlarm",
+				AlarmDescription = $"Alarma para notificar errores en Lambda Cognito Trigger de la aplicacion {appName}",
+				Metric = function.MetricErrors(),
+				Threshold = 1,
+				EvaluationPeriods = 1,
+				ComparisonOperator = ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+				TreatMissingData = TreatMissingData.NOT_BREACHING,
+			});
+			alarmEmail.AddAlarmAction(new SnsAction(topic));
 			#endregion
 		}
 	}
