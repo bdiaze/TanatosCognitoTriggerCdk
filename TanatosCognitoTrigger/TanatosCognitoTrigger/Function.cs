@@ -66,6 +66,8 @@ public class Function {
 
 			SuscripcionDao suscripcionDao = serviceProvider.GetRequiredService<SuscripcionDao>();
 			await suscripcionDao.ActivarSuscripcionGratuita(cognitoEvento.UserName);
+		} else if (triggerSource == "PostConfirmation_ConfirmForgotPassword") {
+			// Nada que hacer...		
 		} else if (CUSTOM_EMAIL_EVENTS.Contains(triggerSource)) {
 			CognitoCustomEmailSenderEvent cognitoEvento = JsonSerializer.Deserialize<CognitoCustomEmailSenderEvent>(jsonCognitoEvento.GetRawText()) ?? throw new InvalidOperationException("CognitoCustomEmailSenderEvent no definido");
 
